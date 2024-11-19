@@ -159,10 +159,9 @@ def check_cvp_validity(file_path: Path) -> bool:
             process_possible_gbk_zip(cvp)
             filenames = [info.filename for info in cvp.filelist]
             for file_name in filenames:
-                print(file_name)
                 if 'lgc_api.exe' in file_name:
                     return True
-            print('指定的转换包未包含必需的文件！')
+            print('指定的转换包未包含必需的文件（lgc_api.exe）！')
             return False
     except Exception as cvp_ex:
         print(f'检查转换包可用性时发生错误。错误信息：{cvp_ex}')
