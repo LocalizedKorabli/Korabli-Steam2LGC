@@ -220,3 +220,5 @@ except Exception as ex:
     print(f'发生错误，错误信息：{ex}')
     input('若需反馈问题，请在保存错误信息的截图后按回车键打开反馈网页。')
     webbrowser.open('https://gitee.com/localized-korabli/Korabli-Steam2LGC/issues')
+
+# pyinstaller -i resources/icon.ico --onefile --version-file=resources/version_file.txt client_converter.py --clean
