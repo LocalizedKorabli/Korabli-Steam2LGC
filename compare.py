@@ -4,7 +4,13 @@ import zipfile
 import fnmatch
 
 # 定义需要排除的目录和文件模式
-EXCLUDED_DIRS = ['profile', 'replays', 'updates', 'GameCheck', 'Reports', 'crashes', 'l10n_installer', 'screenshot', 'res_mods', 'l10n', 'res_packages']
+EXCLUDED_DIRS = [
+    'profile', 'replays', 'updates',
+    'GameCheck', 'Reports', 'crashes',
+    'l10n_installer', 'screenshot', 'res_mods',
+    'l10n', 'res_packages', 'Aslain_Modpack',
+    'res_unpack', 'WGCheck'
+]
 # EXCLUDED_FILES = ['*.tmp', '*.log', 'exclude_file.txt']
 EXCLUDED_FILES = ['*.tmp', '*.log', 'exclude_file.txt']
 

@@ -1,4 +1,4 @@
-# Consumable Camouflage replacer
+# Client Converter
 # Copyright (C) 2024 LocalizedKorabli
 #
 # This program is free software: you can redistribute it and/or modify it under the terms of the GNU General
@@ -21,10 +21,10 @@ import requests
 from pathlib import Path
 from typing import Optional, Tuple
 
-version = '0.0.1'
+version = '0.0.2'
 
 intro = f'''
-战舰世界莱服Steam端→LGC端转换器
+战舰世界Steam端→GameCenter端转换器
 Copyright 2024 LocalizedKorabli
 基于GNU GPL-3.0许可证分发
 版本：{version}
@@ -36,7 +36,7 @@ Copyright 2024 LocalizedKorabli
 
 info_dir_current = '''
 第1/3步：
-检测到程序运行目录可能是战舰世界莱服安装目录，是否直接进行转换操作？
+检测到程序运行目录可能是战舰世界安装目录，是否直接进行转换操作？
 若是，请直接按下回车；
 若否，请输入需要进行转换操作的目录路径再按回车。
 （提示，您可以尝试将目录根文件夹直接拖入本页面中来快速填写路径）
@@ -54,7 +54,7 @@ info_dir_normal = '''
 
 info_dir_retry = '''
 第1/3步：
-目录不存在或不是有效的战舰世界莱服安装目录，请检查后重新输入。
+目录不存在或不是有效的战舰世界安装目录，请检查后重新输入。
 
 请输入：
 '''
@@ -72,7 +72,8 @@ info_local_file_input = '''
 info_will_execute = '''
 第3/3步：
 即将应用转换包。
-若之后游戏不能正常运行，请通过LGC或Steam“验证游戏文件的完整性”。
+若之后游戏不能正常运行，请先删除安装目录下的GameCheck文件夹，再通过LGC/WGC下载GameCheck后进行完整性检查。
+若需要通过Steam游玩但无法正常启动游戏，请通过Steam“验证游戏文件的完整性”。
 
 按回车键继续。
 '''
@@ -88,7 +89,13 @@ metadata_download_choice = '''
 请选择：
 ''', 1, 3
 
-
+metadata_region_choice = '''
+第1/3步：
+未能自动识别客户端服务器类型。
+请选择客户端服务器类型：
+1. 莱服（Lesta）
+2. 直营服（Wargaming）
+''', 1, 2
 
 const_lanzou_url = 'https://tapio.lanzn.com/b0nym5huh'
 
@@ -97,13 +104,16 @@ def run() -> None:
     dir_choice = input(info_dir_current if check_dir_validity(Path('.')) else info_dir_normal)
     while not check_dir_validity(Path(dir_choice)):
        dir_choice = input(info_dir_retry)
+    region_choice = check_region(Path(dir_choice))
+    if region_choice is None:
+        region_choice = get_num_choice(metadata_region_choice)
     src_choice = get_num_choice(metadata_download_choice)
-    downloaded = download_or_await_input(src_choice)
+    downloaded = download_or_await_input(src_choice, region_choice)
     for retry_count in range(5):
         if downloaded is not None:
             break
         print('第{}次重试…'.format(str(retry_count + 1)))
-        downloaded = download_or_await_input(src_choice)
+        downloaded = download_or_await_input(src_choice, region_choice)
     input(info_will_execute)
     try:
         with zipfile.ZipFile(downloaded, 'r') as cvp:
@@ -117,7 +127,19 @@ def run() -> None:
         input('按回车键退出。')
 
 
-def download_or_await_input(src_choice: int) -> Optional[Path]:
+def check_region(target_dir: Path) -> Optional[int]:
+    if target_dir.joinpath('Korabli.exe').is_file():
+        print('检测到莱服客户端')
+        return 1
+    elif target_dir.joinpath('WorldOfWarships.exe').is_file():
+        print('检测到直营服客户端')
+        return 2
+    else:
+        print('未检测到战舰世界客户端')
+        return None
+
+
+def download_or_await_input(src_choice: int, region_choice: int) -> Optional[Path]:
     if src_choice == 3:
         local_file = input(info_local_file_input)
         while not Path(local_file).is_file():
@@ -134,10 +156,13 @@ def download_or_await_input(src_choice: int) -> Optional[Path]:
         is_gitee = src_choice == 1
         print('开始连接{}线路…'.format('Gitee' if is_gitee else 'GitHub'))
         proxies = {scheme: proxy for scheme, proxy in urllib.request.getproxies().items()}
-        output_file = get_master_dir().joinpath('lgc.zip')
+        pack_name = 'lgc' if region_choice == 1 else 'wgc'
+        output_file = get_master_dir().joinpath(f'{pack_name}.zip')
         try:
-            d_url = ('https://{}/Korabli-Steam2LGC/raw/main/packages/lgc.zip'
-                     .format('gitee.com/localized-korabli' if is_gitee else 'github.com/LocalizedKorabli'))
+            d_url = ('https://{}/Korabli-Steam2LGC/raw/main/packages/{}.zip'.format(
+                'gitee.com/localized-korabli' if is_gitee else 'github.com/LocalizedKorabli',
+                pack_name
+            ))
             response = requests.get(
                 d_url, stream=True, proxies=proxies, timeout=5000
             )
@@ -161,7 +186,7 @@ def download_or_await_input(src_choice: int) -> Optional[Path]:
 def check_dir_validity(target_dir: Path) -> bool:
     if not target_dir.is_dir():
         return False
-    return target_dir.joinpath('Korabli.exe').is_file() and target_dir.joinpath('bin').is_dir()
+    return (target_dir.joinpath('WorldOfWarships.exe').is_file() or target_dir.joinpath('Korabli.exe').is_file()) and target_dir.joinpath('bin').is_dir()
 
 
 def check_cvp_validity(file_path: Path) -> bool:
@@ -171,9 +196,9 @@ def check_cvp_validity(file_path: Path) -> bool:
             process_possible_gbk_zip(cvp)
             filenames = [info.filename for info in cvp.filelist]
             for file_name in filenames:
-                if 'lgc_api.exe' in file_name:
+                if 'lgc_api.exe' in file_name or 'wgc_api.exe' in file_name:
                     return True
-            print('指定的转换包未包含必需的文件（lgc_api.exe）！')
+            print('指定的转换包未包含必需的文件（lgc_api.exe或wgc_api.exe）！')
             return False
     except Exception as cvp_ex:
         print(f'检查转换包可用性时发生错误。错误信息：{cvp_ex}')
