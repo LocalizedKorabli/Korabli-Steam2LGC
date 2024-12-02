@@ -102,8 +102,12 @@ const_lanzou_url = 'https://tapio.lanzn.com/b0nym5huh'
 def run() -> None:
     input(intro)
     dir_choice = input(info_dir_current if check_dir_validity(Path('.')) else info_dir_normal)
+    if dir_choice.startswith('"') and dir_choice.endswith('"'):
+        dir_choice = eval(dir_choice)
     while not check_dir_validity(Path(dir_choice)):
        dir_choice = input(info_dir_retry)
+       if dir_choice.startswith('"') and dir_choice.endswith('"'):
+           dir_choice = eval(dir_choice)
     region_choice = check_region(Path(dir_choice))
     if region_choice is None:
         region_choice = get_num_choice(metadata_region_choice)
@@ -121,7 +125,7 @@ def run() -> None:
             cvp.extractall(dir_choice)
         print('转换包应用成功！')
         input('按回车键启动游戏。')
-        subprocess.run(Path(dir_choice).joinpath('lgc_api.exe'))
+        subprocess.run(Path(dir_choice).joinpath('lgc_api.exe' if region_choice == 1 else 'wgc_api.exe'))
     except Exception as cvp_ex:
         print(f'应用转换包时出现错误。错误信息：{cvp_ex}')
         input('按回车键退出。')
@@ -163,6 +167,7 @@ def download_or_await_input(src_choice: int, region_choice: int) -> Optional[Pat
                 'gitee.com/localized-korabli' if is_gitee else 'github.com/LocalizedKorabli',
                 pack_name
             ))
+            print(f'正在连接d_url…')
             response = requests.get(
                 d_url, stream=True, proxies=proxies, timeout=5000
             )
@@ -220,7 +225,7 @@ def parse_num_choice(raw_choice: str, min_num: int, max_num: int) -> Optional[in
         return None
 
 def get_master_dir() -> Path:
-    master_dir = Path('korabli_client_converter')
+    master_dir = Path('client_converter')
     os.makedirs(master_dir, exist_ok=True)
     return master_dir
 
