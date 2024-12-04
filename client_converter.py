@@ -167,7 +167,7 @@ def download_or_await_input(src_choice: int, region_choice: int) -> Optional[Pat
                 'gitee.com/localized-korabli' if is_gitee else 'github.com/LocalizedKorabli',
                 pack_name
             ))
-            print(f'正在连接d_url…')
+            print(f'正在连接{d_url}…')
             response = requests.get(
                 d_url, stream=True, proxies=proxies, timeout=5000
             )
